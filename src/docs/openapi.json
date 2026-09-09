@@ -1,0 +1,168 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Enterprise Node.js Modular Monolith API",
+    "version": "1.0.0",
+    "description": "Production-grade monolithic REST API built in Node.js (ESM) with clean architecture, strict policy gates, and RFC 7807 compliance.",
+    "contact": {
+      "name": "Enterprise Architecture Team",
+      "email": "architecture@enterprise.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "example": "https://errors.api.enterprise.com/resource-not-found" },
+          "title": { "type": "string", "example": "Not Found" },
+          "status": { "type": "integer", "example": 404 },
+          "detail": { "type": "string", "example": "Resource not found" },
+          "instance": { "type": "string", "example": "/api/v1/products/123" },
+          "code": { "type": "string", "example": "RESOURCE_NOT_FOUND" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "firstName", "lastName"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "john.doe@example.com" },
+          "password": { "type": "string", "format": "password", "example": "P@ssw0rd123!" },
+          "firstName": { "type": "string", "example": "John" },
+          "lastName": { "type": "string", "example": "Doe" },
+          "role": { "type": "string", "enum": ["admin", "manager", "user"], "default": "user" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "john.doe@example.com" },
+          "password": { "type": "string", "format": "password", "example": "P@ssw0rd123!" }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "refreshToken": { "type": "string" },
+          "expiresIn": { "type": "string", "example": "1h" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string", "example": "Ergonomic Mechanical Keyboard" },
+          "description": { "type": "string", "example": "Custom tactile switches with RGB backlighting." },
+          "price": { "type": "number", "example": 149.99 },
+          "sku": { "type": "string", "example": "KB-MECH-01" },
+          "category": { "type": "string", "example": "Electronics" },
+          "stockQuantity": { "type": "integer", "example": 50 },
+          "isAvailable": { "type": "boolean", "example": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "summary": "Kubernetes Liveness Probe",
+        "tags": ["Health"],
+        "responses": {
+          "200": { "description": "Process is alive and responsive" }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Kubernetes Readiness Probe",
+        "tags": ["Health"],
+        "responses": {
+          "200": { "description": "Subsystems and dependencies are healthy" }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "summary": "Register a new user account",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created and authentication tokens issued" },
+          "400": { "$ref": "#/components/schemas/ProblemDetails" },
+          "409": { "$ref": "#/components/schemas/ProblemDetails" }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Authenticate user credentials",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Authentication successful" },
+          "401": { "$ref": "#/components/schemas/ProblemDetails" }
+        }
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "summary": "Get authenticated user profile",
+        "tags": ["Users"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Profile retrieved" },
+          "401": { "$ref": "#/components/schemas/ProblemDetails" }
+        }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "summary": "List products with search and pagination",
+        "tags": ["Products"],
+        "responses": {
+          "200": { "description": "Paginated product list" }
+        }
+      },
+      "post": {
+        "summary": "Create product (Admin/Manager only)",
+        "tags": ["Products"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Product created" }
+        }
+      }
+    }
+  }
+}
